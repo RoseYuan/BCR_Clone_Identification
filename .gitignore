@@ -7,6 +7,7 @@ Scripts/.ipynb_checkpoints/
 Scripts/.ipynb_checkpoints/**
 Scripts/__pycache__/
 Scripts/__pycache__/**
+.DS_Store
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
