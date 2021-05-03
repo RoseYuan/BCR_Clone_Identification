@@ -1,8 +1,39 @@
 import pandas as pd
 import numpy as np
 from libSeq import *
-import time
+import time, re
 
+
+def clean_data(df):
+    """
+    Remove duplicated V-D-J-REGION sequence, and remove items if V-DOMAIN Functionality != "productive"
+    :param df:
+    :return:
+    """
+    n_rows0, _ = df.shape
+    print("%d sequences in total." % n_rows0)
+    df = df.drop_duplicates(subset="V-D-J-REGION", ignore_index=True)
+    n_rows1, _ = df.shape
+    print("Drop %d duplicated sequences." % (n_rows0 - n_rows1))
+    df = df.loc[df["V-DOMAIN Functionality"] == "productive", :]
+    n_rows2, _ = df.shape
+    print("Drop %d sequences by filtering V-DOMAIN Functionality." % (n_rows2 - n_rows1))
+    print("%d sequences remain." % n_rows2)
+    return df
+
+
+def read_VJ_genes(allele_notation) -> str:
+    """
+    Get the V/J fragment annotation regardless of the allele types. If multiple fragment types
+    appear, only preserve the first one.
+
+    :param series:
+    :return:
+    """
+    alleles = re.split(", or | or |\*",allele_notation)
+    genes = [gene for gene in alleles if "Homsap" in gene]
+    genes = list(set(genes))
+    return genes[0]
 
 def read_data(nt_file: str, outfile: str, expand=True):
     """
@@ -13,7 +44,11 @@ def read_data(nt_file: str, outfile: str, expand=True):
     :return: None
     """
     df_n = pd.read_csv(nt_file, sep='\t')
+    # clean the data
+    df_n = clean_data(df_n)
+    # get junction length
     df_n['JUNCTION length'] = df_n['JUNCTION end'] - df_n['JUNCTION start'] + 1
+    # get V/J gene annotations
     # sequence with 2 V/J gene annotations: flatten into two rows
     if expand:
         df_n['multiple V-GENE alleles'] = df_n.loc[:, 'V-GENE and allele'].str.split(", or | or ").str.len() >= 2
@@ -30,7 +65,10 @@ def read_data(nt_file: str, outfile: str, expand=True):
         df_nes = df_n[
             ['Sequence number', 'Sequence ID', 'V-GENE and allele', 'J-GENE and allele', 'V-D-J-REGION', 'JUNCTION',
              'JUNCTION length']]
-
+    rows1, _ = df_nes.shape
+    df_nes = df_nes.dropna()
+    rows2, _ = df_nes.shape
+    print("Drop %d rows contain nan." % (rows1 - rows2))
     df_nes.to_csv(outfile, sep='\t', index=False)
 
 
@@ -52,70 +90,52 @@ def dist_pairwise(seq_list, distance=Normalized_Hamming_dist) -> np.array:
     :param seq_list:
     :return:
     """
+    counts = 0
     l = len(seq_list)
     dis = np.empty(shape=(l, l))
-    dis[:] = 1
-    for i0, i in enumerate(seq_list):
-        for j0, j in enumerate(seq_list):
+    dis[:] = 1.5
+    for i, string1 in enumerate(seq_list):
+        for j, string2 in enumerate(seq_list):
             if j > i:
-                string1 = seq_list[i]
-                string2 = seq_list[j]
                 d = distance(string1, string2)
-                dis[i0, j0] = d
-    return dis
+                counts += 1
+                dis[i, j] = d
+    return dis, counts
 
 
 def dist_to_nearest(dis: np.array):
-    dis_plus = np.copy(dis)
-    dis_plus[dis == 0] = np.nan
-    d_to_nearest = np.nanmin(dis_plus, axis=0)
+    dis = np.triu(dis)
+    dis = dis + dis.T - np.diag(np.diag(dis))
+    d_to_nearest = np.nanmin(dis, axis=0)
     return d_to_nearest
 
 
-def subsample(df, frac=0.2, random_state=1, groups=None) -> pd.DataFrame:
+def subsample(df, random_state=1, frac_small=0.9, frac=None, n=None, groups=None) -> pd.DataFrame:
     """
 
+    :param frac_small:
+    :param n: cannot be used with frac
     :param df:
-    :param frac:
+    :param frac: cannot be used with n
     :param random_state:
     :param groups: a list of index, used to stratify df
     :return:
     """
+    if n is not None and frac is not None:
+        raise ValueError("n cannot be used with frac! Choose one to use.")
+
     df_sampled = pd.DataFrame(columns=df.columns)
+
     if groups is None:
-        return df.sample(frac=frac, random_state=random_state)
+        return df.sample(frac=frac, n=n, random_state=random_state)
     else:
         for group in groups:
-            df_group_sampled = df.loc[group, :].sample(frac=0.1, random_state=1)
+            if (n is not None) and (len(group) < n):
+                df_group_sampled = df.loc[group, :].sample(frac=frac_small, random_state=1)
+            else:
+                df_group_sampled = df.loc[group, :].sample(frac=frac, n=n, random_state=1)
             df_sampled = pd.concat([df_sampled, df_group_sampled])
         return df_sampled
-
-
-def dist_to_nearest_distribution_Hamming(df):
-    """
-    Calculate the distance to nearest neighbor using Normalized Hamming distance,
-    and only compute the distance when the sequence pair are of the same length.
-    :param df:
-    :return:
-    """
-    len_counts = df.loc[:, "JUNCTION length"].value_counts()
-    keys, values = group_seq(df, keys=["JUNCTION length"])
-    df_summary = pd.DataFrame(columns=["Junction length", "number of seq", "index", "d to nearest"])
-    for i, length in enumerate(keys):
-        start_time = time.time()
-        index = list(values)[i]
-        n_seq = len_counts[length]
-        sequences = df.loc[index, "JUNCTION"].values
-        dis = dist_pairwise(sequences)
-        d_to_nearest = dist_to_nearest(dis)
-        df_summary.loc[i, :] = [length, n_seq, index, d_to_nearest]
-        print("For length %s , %s sequences, use %s seconds." % (length, n_seq,
-                                                                 time.time() - start_time))
-    return df_summary
-
-
-def det_cutoff():
-    return
 
 
 def check_duplicate():  # check duplicated sequence across groups
