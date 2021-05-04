@@ -17,7 +17,7 @@ def clean_data(df):
     print("Drop %d duplicated sequences." % (n_rows0 - n_rows1))
     df = df.loc[df["V-DOMAIN Functionality"] == "productive", :]
     n_rows2, _ = df.shape
-    print("Drop %d sequences by filtering V-DOMAIN Functionality." % (n_rows2 - n_rows1))
+    print("Drop %d sequences by filtering V-DOMAIN Functionality." % (n_rows1 - n_rows2))
     print("%d sequences remain." % n_rows2)
     return df
 
@@ -35,12 +35,12 @@ def read_VJ_genes(allele_notation) -> str:
     genes = list(set(genes))
     return genes[0]
 
-def read_data(nt_file: str, outfile: str, expand=True):
+
+def read_data(nt_file: str, outfile: str):
     """
     Get necessary information and save to a file.
     :param nt_file: Nt sequence without gaps
     :param outfile: output file path and name
-    :param expand: for sequence with multiple V/J gene annotations: expand rows or not
     :return: None
     """
     df_n = pd.read_csv(nt_file, sep='\t')
@@ -49,22 +49,11 @@ def read_data(nt_file: str, outfile: str, expand=True):
     # get junction length
     df_n['JUNCTION length'] = df_n['JUNCTION end'] - df_n['JUNCTION start'] + 1
     # get V/J gene annotations
-    # sequence with 2 V/J gene annotations: flatten into two rows
-    if expand:
-        df_n['multiple V-GENE alleles'] = df_n.loc[:, 'V-GENE and allele'].str.split(", or | or ").str.len() >= 2
-        df_n['multiple J-GENE alleles'] = df_n.loc[:, 'J-GENE and allele'].str.split(", or | or ").str.len() >= 2
-        df_n['V-GENE and allele'] = df_n.loc[:, 'V-GENE and allele'].str.split(", or | or ").values
-        df_n['J-GENE and allele'] = df_n.loc[:, 'J-GENE and allele'].str.split(", or | or ").values
-        df_n = df_n.explode('V-GENE and allele').reset_index(drop=True)
-        df_n = df_n.explode('J-GENE and allele').reset_index(drop=True)
-
-        df_nes = df_n[
-            ['Sequence number', 'Sequence ID', 'V-GENE and allele', 'J-GENE and allele', 'V-D-J-REGION', 'JUNCTION',
-             'JUNCTION length', 'multiple V-GENE alleles', 'multiple J-GENE alleles']]
-    else:
-        df_nes = df_n[
-            ['Sequence number', 'Sequence ID', 'V-GENE and allele', 'J-GENE and allele', 'V-D-J-REGION', 'JUNCTION',
-             'JUNCTION length']]
+    df_n['V-GENE'] = df_n['V-GENE and allele'].apply(read_VJ_genes)
+    df_n['J-GENE'] = df_n['J-GENE and allele'].apply(read_VJ_genes)
+    df_nes = df_n[
+        ['Sequence number', 'Sequence ID', 'V-GENE', 'J-GENE', 'V-D-J-REGION', 'JUNCTION',
+         'JUNCTION length']]
     rows1, _ = df_nes.shape
     df_nes = df_nes.dropna()
     rows2, _ = df_nes.shape
@@ -72,7 +61,7 @@ def read_data(nt_file: str, outfile: str, expand=True):
     df_nes.to_csv(outfile, sep='\t', index=False)
 
 
-def group_seq(df_nes: pd.DataFrame, keys=('V-GENE and allele', 'J-GENE and allele', 'JUNCTION length')):
+def group_seq(df_nes: pd.DataFrame, keys=('V-GENE', 'J-GENE', 'JUNCTION length')):
     seq_groups = df_nes.groupby(list(keys)).groups
     return seq_groups.keys(), seq_groups.values()
 
