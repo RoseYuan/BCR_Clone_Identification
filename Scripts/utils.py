@@ -2,6 +2,11 @@ import pandas as pd
 import numpy as np
 from libSeq import *
 import time, re
+from itertools import product
+from collections import Counter
+"""
+Preprocessing:
+"""
 
 
 def clean_data(df):
@@ -30,7 +35,7 @@ def read_VJ_genes(allele_notation) -> str:
     :param series:
     :return:
     """
-    alleles = re.split(", or | or |\*",allele_notation)
+    alleles = re.split(", or | or |\*", allele_notation)
     genes = [gene for gene in alleles if "Homsap" in gene]
     genes = list(set(genes))
     return genes[0]
@@ -66,15 +71,15 @@ def group_seq(df_nes: pd.DataFrame, keys=('V-GENE', 'J-GENE', 'JUNCTION length')
     return seq_groups.keys(), seq_groups.values()
 
 
-# def retrieve_group(key:tuple,seq_groups:dict,df:pd.DataFrame) -> pd.DataFrame:
-#     df_group = pd.DataFrame([])
-#     return df_group
+"""
+Calculating distances:
+"""
 
 
 def dist_pairwise(seq_list, distance=Normalized_Hamming_dist) -> np.array:
     """
     Calculate pairwise distance within a sequence list.
-    If two strings are of different length, d=1
+    If two strings are of different length, d=1.5
     :param distance: distance metric
     :param seq_list:
     :return:
@@ -97,6 +102,11 @@ def dist_to_nearest(dis: np.array):
     dis = dis + dis.T - np.diag(np.diag(dis))
     d_to_nearest = np.nanmin(dis, axis=0)
     return d_to_nearest
+
+
+"""
+Sampling:
+"""
 
 
 def subsample(df, random_state=1, frac_small=0.9, frac=None, n=None, groups=None) -> pd.DataFrame:
@@ -129,3 +139,110 @@ def subsample(df, random_state=1, frac_small=0.9, frac=None, n=None, groups=None
 
 def check_duplicate():  # check duplicated sequence across groups
     return
+
+
+"""
+Compute tf-idf representation:
+"""
+
+
+def k_mer_set(k=4,atoms=["a","t","c","g"])->list:
+    K = [''.join(kmer) for kmer in product(atoms, repeat=k)]
+    return K
+
+
+def bag_of_words(sequence:str, K:list):
+    sequence = sequence.lower()
+    bag = dict.fromkeys(K,0)
+    k = len(K[0])
+    for i in range(len(sequence)-k+1):
+        kmer = sequence[i:i+k]
+        bag[kmer] += 1
+    return bag
+
+
+def count_words(bag_list:list)->dict:
+    counter = Counter()
+    for bag in bag_list:
+        counter.update(bag)
+    return dict(counter), len(bag_list)
+
+
+def idf(n_seq:int,counter:dict)->dict:
+    idf_k = {}
+    for kmer in counter.keys():
+        if counter[kmer]!=0:
+            idf_k[kmer] = np.log(n_seq/counter[kmer])
+    return idf_k
+
+
+def tf_idf(bag:dict,idf_k:dict):
+    """
+    Calculate the tf-idf representation of a sequence.
+    :param bag:
+    :param idf_k:
+    :return:
+    """
+    tf_idf_vector = {}
+    no_occured_kmers = bag.keys()-idf_k.keys()
+    for kmer in no_occured_kmers:
+        bag.pop(kmer,None)
+    if bag.keys()!= idf_k.keys():
+        raise ValueError("Different kmer sets. Please check.")
+    for kmer in idf_k.keys():
+        tf_idf_vector[kmer] = bag[kmer] * idf_k[kmer]
+    total = sum(tf_idf_vector.values(), 0.0)
+    nor_tf_idf_dict = {k: v / total for k, v in tf_idf_vector.items()}
+    return nor_tf_idf_dict
+
+
+def cal_tf_idf(sequences,k=4,atoms=["a","t","c","g"]):
+    """
+
+    :param sequences:
+    :param k:
+    :param atoms:
+    :return: a list of dict
+    """
+    K = k_mer_set(k,atoms)
+    bag_list = [bag_of_words(seq, K) for seq in sequences]
+    counter,n_seq = count_words(bag_list)
+    idf_k = idf(n_seq,counter)
+    tf_idf_list = [tf_idf(bag,idf_k) for bag in bag_list]
+    return tf_idf_list
+
+
+
+
+if __name__=="__main__":
+    K=k_mer_set(k=2)
+    print("K:",K)
+    s1="aAtGTgac"
+    s2="aAAtGcTga"
+    s3="aAttcgatca"
+    s4="aAtctaggcg"
+    z = bag_of_words(s1, K)
+    a = bag_of_words(s2, K)
+    b = bag_of_words(s3, K)
+    c = bag_of_words(s4, K)
+    counter,n = count_words([z,a,b,c])
+    print("bag:",[z,a,b,c])
+    print("Counter:",counter)
+    idf_k = idf(n,counter)
+
+    nor_tf_idf = tf_idf(a,idf_k)
+    print(idf_k)
+    print(nor_tf_idf)
+    print(sum(nor_tf_idf.values()))
+
+    seqs = [s1,s2,s3,s4]
+    print(cal_tf_idf(seqs,k=2))
+    tf_idf_seq = cal_tf_idf(seqs,k=2)
+    print("tf_idf_seq:" ,tf_idf_seq)
+    dis = dist_pairwise(tf_idf_seq,distance=Cosine_dist)
+    print("dis:",dis)
+
+
+
+
+

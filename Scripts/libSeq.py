@@ -13,7 +13,8 @@ def Normalized_Hamming_dist(string1,string2):
             if string1[i] != string2[i]:
                 H += 1     
         return H/len(string1)
-    
+
+
 def Normalized_Levenshtein_dist(string1, string2):
     """
     [ref] Yujian, Li, and Liu Bo. "A normalized Levenshtein distance metric." 
@@ -26,8 +27,14 @@ def Normalized_Levenshtein_dist(string1, string2):
         norm_lev = 2*Lev/(len(string1)+len(string2)+Lev)
         
         return norm_lev
-    
-    
+
+
+def Cosine_dist(tf_idf1:dict,tf_idf2:dict):
+    if tf_idf1.keys() != tf_idf2.keys():
+        raise ValueError("different set of keys! Cannot compute the inner product.")
+    return 1-sum([tf_idf1[k]*tf_idf2[k] for k in tf_idf1.keys()])
+
+
 if __name__ == "__main__":
     
     strA = "Hello world"
