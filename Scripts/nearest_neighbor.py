@@ -1,16 +1,16 @@
 from AESA import *
 
 
-def dist_to_nearest_all_exhaustive(seqs, distance=Normalized_Hamming_dist):
-    n_seq = len(seqs)
+def dist_to_nearest_all_exhaustive(seqs1, seqs2=None, distance=Normalized_Hamming_dist):
+    n_seq = len(seqs1)
     if n_seq <= 1:
         raise ValueError("Must have at least two sequences.")
     start_time = time.time()
-    dis, counts = dist_pairwise(seqs, distance=distance)
+    dis, counts = dist_pairwise(seqs1, seqs2, distance=distance)
     d_to_nearest_all = dist_to_nearest(dis)
     print("%d sequences, %d calls, use %2f seconds."
           % (n_seq, counts, time.time() - start_time))
-    return d_to_nearest_all
+    return d_to_nearest_all,dis
 
 
 def cal_dist_to_nearest_all_exhaustive(df, groupby=None, distance=Normalized_Hamming_dist):
@@ -24,19 +24,26 @@ def cal_dist_to_nearest_all_exhaustive(df, groupby=None, distance=Normalized_Ham
     """
     if groupby is None:
         sequences = df.loc[:, "JUNCTION"].values
-        d_to_nearest_all = dist_to_nearest_all_exhaustive(sequences, distance=distance)
+        d_to_nearest_all,dis = dist_to_nearest_all_exhaustive(sequences, distance=distance)
     else:
         keys, values = group_seq(df, keys=groupby)
         d_to_nearest_all = np.array([])
+        l,_ = df.shape
+        dis = np.empty(shape=(l, l))
+        dis[:] = 1
 
         for i, key in enumerate(keys):
             index = list(values)[i]
             sequences = df.loc[index, "JUNCTION"].values
             if len(sequences) > 1:
                 print("For group %s = %s: " % (groupby, key))
-                d_to_nearest = dist_to_nearest_all_exhaustive(sequences, distance=distance)
+                d_to_nearest,ds = dist_to_nearest_all_exhaustive(sequences, distance=distance)
                 d_to_nearest_all = np.concatenate((d_to_nearest_all, d_to_nearest))
-    return d_to_nearest_all
+                # dis[index,:][:,index] = ds # not working
+                for m,ind1 in enumerate(index):
+                    for n,ind2 in enumerate(index):
+                        dis[ind1,ind2] = ds[m,n]
+    return d_to_nearest_all, dis
 
 
 def dist_to_nearest_all_approximate(pilots, seqs, distance=Normalized_Levenshtein_dist):
@@ -76,8 +83,20 @@ if __name__=="__main__":
     # print(d)
     # d = dist_to_nearest_all_exhaustive(df)
 
-    outfile = path_data+"Nt_info.csv"
+    # outfile = path_data+"Nt_info.csv"
+    # df = pd.read_csv(outfile, sep='\t')
+    # seqs_tf_idf = cal_tf_idf(df.loc[0:4,"V-D-J-REGION"].values,k=2)
+    # d_to_nearest_all,dis = dist_to_nearest_all_exhaustive(seqs_tf_idf,distance=Cosine_dist)
+    # print(d_to_nearest_all)
+    # print(dis)
+    # path_data = "/Users/lou/Box/Human Lymph Node/"
+    outfile = path_data + "sample90_Nt_info.csv"
     df = pd.read_csv(outfile, sep='\t')
-    seqs_tf_idf = cal_tf_idf(df.loc[0:4,"V-D-J-REGION"].values,k=2)
-    d_to_nearest_all = dist_to_nearest_all_exhaustive(seqs_tf_idf,distance=Cosine_dist)
+    print("All sequence:", df.shape)
+    df_unique = df.drop_duplicates(subset="JUNCTION", ignore_index=True)
+    print("Unique junction sequence:", df_unique.shape)
+    d_to_nearest_all, dis = cal_dist_to_nearest_all_exhaustive(df_unique, groupby=["JUNCTION length"])
     print(d_to_nearest_all)
+
+    # seqs_tf_idf = cal_tf_idf(df.loc[:, "V-D-J-REGION"].values, k=2, atoms=["a", "t", "c", "g"])
+    # d_to_nearest_all_samples, dis_samples = dist_to_nearest_all_exhaustive(seqs_tf_idf, distance=Cosine_dist)
