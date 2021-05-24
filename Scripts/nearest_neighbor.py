@@ -75,7 +75,7 @@ def det_cutoff():
 
 
 if __name__=="__main__":
-    path_data = "/Users/lou/Thesis/BCR_Clone_Identification/Data/"
+    path_data = "/home/siyuan/thesis/Data/"
     # outfile = path_data+"Nt_info_expanded.csv"
     # df = pd.read_csv(outfile, sep='\t')
     # df = df.iloc[1:210,:]
@@ -92,11 +92,11 @@ if __name__=="__main__":
     # path_data = "/Users/lou/Box/Human Lymph Node/"
     outfile = path_data + "sample90_Nt_info.csv"
     df = pd.read_csv(outfile, sep='\t')
-    print("All sequence:", df.shape)
-    df_unique = df.drop_duplicates(subset="JUNCTION", ignore_index=True)
-    print("Unique junction sequence:", df_unique.shape)
-    d_to_nearest_all, dis = cal_dist_to_nearest_all_exhaustive(df_unique, groupby=["JUNCTION length"])
-    print(d_to_nearest_all)
+    # print("All sequence:", df.shape)
+    # df_unique = df.drop_duplicates(subset="JUNCTION", ignore_index=True)
+    # print("Unique junction sequence:", df_unique.shape)
+    # d_to_nearest_all, dis = cal_dist_to_nearest_all_exhaustive(df_unique, groupby=["JUNCTION length"])
+    # print(d_to_nearest_all)
 
-    # seqs_tf_idf = cal_tf_idf(df.loc[:, "V-D-J-REGION"].values, k=2, atoms=["a", "t", "c", "g"])
-    # d_to_nearest_all_samples, dis_samples = dist_to_nearest_all_exhaustive(seqs_tf_idf, distance=Cosine_dist)
+    seqs_tf_idf = cal_tf_idf(df.loc[:, "V-D-J-REGION"].values, k=2, atoms=["a", "t", "c", "g"])
+    d_to_nearest_all_samples, dis_samples = dist_to_nearest_all_exhaustive(seqs_tf_idf, distance=Cosine_dist)

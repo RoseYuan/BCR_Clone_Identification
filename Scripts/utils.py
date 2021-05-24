@@ -6,7 +6,7 @@ from itertools import product
 from collections import Counter
 from scipy.ndimage import gaussian_filter1d
 import matplotlib.pyplot as plt
-import multiprocessing as mp
+
 """
 Preprocessing:
 """
@@ -99,7 +99,7 @@ def dist_pairwise(seq_list1, seq_list2=None, distance=Normalized_Hamming_dist) -
 
     for i in range(l1):
         for j in range(l2):
-            if i!=j:
+            if i != j:
                 d = distance(seq_list1[i], seq_list2[j])
                 counts += 1
                 dis[i, j] = d
@@ -205,7 +205,7 @@ def tf_idf(bag: dict, idf_k: dict):
     for kmer in idf_k.keys():
         tf_idf_vector[kmer] = bag[kmer] * idf_k[kmer]
     l2_norm = np.linalg.norm(np.array(list(tf_idf_vector.values())))
-    nor_tf_idf_dict = {k: v / l2_norm for k, v in tf_idf_vector.items()}
+    nor_tf_idf_dict = {k: v / l2_norm for k, v in tf_idf_vector.items()}  # imprecise because of rounding
     return nor_tf_idf_dict
 
 
@@ -252,7 +252,10 @@ def outlier_based_cutoff(d_to_nearest_all):
 
     # ___ detection of local minimums and maximums ___
     min_ind = (np.diff(np.sign(np.diff(smoothed_freq0))) > 0).nonzero()[0] + 1
-
+    try:
+        min_ind = min_ind[0:1]
+    except:
+        pass
     # local min
     loc_min = freq[1][min_ind]
     ax[1].plot(freq[1][:-1], np.exp(smoothed_freq0), label='smoothed', c='orange')
@@ -280,30 +283,69 @@ def negation_based_cutoff(d_to_nearest_cp, tolerance):
     return np.quantile(d_to_nearest_cp, tolerance)
 
 
+"Compare the clustering result"
+
+
+def rand_index(clusters1, clusters2):
+    """
+    Compute rand index to measure the similarity between two data clusterings.
+    :param clusters1: clustering result 1, a list or 1d-array, the index is the index of the element;
+    the value is the cluster that the corresponding element is clustered into
+    :param clusters2: clustering result 2, to be compared with clusters1
+    :return:
+    """
+    if len(clusters1) != len(clusters2):
+        raise ValueError("Different number of elements! Cannot compare the clustering results.")
+
+    a = 0  # occurrence of i==j & m==k
+    b = 0  # occurrence of i!=j & m!=k
+    c = 0  # occurrence of i==j & m!=k
+    d = 0  # occurrence of i!=j & m==k
+    for p in range(len(clusters1)):
+        for q in range(len(clusters1)):
+            if q != p:
+                i = clusters1[p]
+                j = clusters1[q]
+                m = clusters2[p]
+                k = clusters2[q]
+                if i == j and m == k:
+                    a += 1
+                elif i != j and m != k:
+                    b += 1
+                elif i == j and m != k:
+                    c += 1
+                elif i != j and m == k:
+                    d += 1
+    return (a + b) / (a + b + c + d)
+
+
 if __name__ == "__main__":
-    K = k_mer_set(k=2)
-    print("K:", K)
-    s1 = "aAtGTgac"
-    s2 = "aAAtGcTga"
-    s3 = "aAttcgatca"
-    s4 = "aAtctaggcg"
-    z = bag_of_words(s1, K)
-    a = bag_of_words(s2, K)
-    b = bag_of_words(s3, K)
-    c = bag_of_words(s4, K)
-    counter, n = count_words_in_collection([z, a, b, c])
-    print("bag:", [z, a, b, c])
-    print("Counter:", counter)
-    idf_k = idf(counter, n)
-
-    nor_tf_idf = tf_idf(a, idf_k)
-    print(idf_k)
-    print(nor_tf_idf)
-    print(sum(nor_tf_idf.values()))
-
-    seqs = [s1, s2, s3, s4]
-    print(cal_tf_idf(seqs, k=2))
-    tf_idf_seq = cal_tf_idf(seqs, k=2)
-    print("tf_idf_seq:", tf_idf_seq)
-    dis = dist_pairwise(tf_idf_seq, distance=Cosine_dist)
-    print("dis:", dis)
+    # K = k_mer_set(k=2)
+    # print("K:", K)
+    # s1 = "aAaa"
+    # s2 = "tttt"
+    # s3 = "cccc"
+    # s4 = "gggg"
+    # z = bag_of_words(s1, K)
+    # a = bag_of_words(s2, K)
+    # b = bag_of_words(s3, K)
+    # c = bag_of_words(s4, K)
+    # counter, n = count_words_in_collection([z, a, b, c])
+    # print("bag:", [z, a, b, c])
+    # print("Counter:", counter)
+    # idf_k = idf(counter, n)
+    #
+    # nor_tf_idf = tf_idf(a, idf_k)
+    # print(idf_k)
+    # print(idf_k.values())
+    # print(sum(nor_tf_idf.values()))
+    #
+    # seqs = [s1, s2, s3, s4]
+    # print(cal_tf_idf(seqs, k=2))
+    # tf_idf_seq = cal_tf_idf(seqs, k=2)
+    # print("tf_idf_seq:", tf_idf_seq)
+    # dis = dist_pairwise(tf_idf_seq, distance=Cosine_dist)
+    # print("dis:", dis)
+    clusters1 = [1, 2, 2, 4]
+    clusters2 = [2, 3, 3, 4]
+    print(rand_index(clusters1, clusters2))
