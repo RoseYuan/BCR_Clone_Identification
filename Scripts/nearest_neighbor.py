@@ -2,12 +2,21 @@ from AESA import *
 
 
 def dist_to_nearest_all_exhaustive(seqs1, seqs2=None, distance=Normalized_Hamming_dist):
+    """
+
+    :param seqs1:
+    :param seqs2:
+    :param distance:
+    :return: Set the diagonal of dis to zero.
+    """
     n_seq = len(seqs1)
     if n_seq <= 1:
         raise ValueError("Must have at least two sequences.")
     start_time = time.time()
     dis, counts = dist_pairwise(seqs1, seqs2, distance=distance)
     d_to_nearest_all = dist_to_nearest(dis)
+    for fi in range(0, len(d_to_nearest_all)):
+        dis[fi, fi] = 0
     print("%d sequences, %d calls, use %2f seconds."
           % (n_seq, counts, time.time() - start_time))
     return d_to_nearest_all,dis

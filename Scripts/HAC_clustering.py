@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import matplotlib
 import copy
 import colorcet
-
+from math import ceil
 
 def main():
     M_dist = 1 - np.load("MI.npy")
@@ -27,6 +27,10 @@ def cluster_HAC(Mat_dist, d_threshold):
         for fj in range(0, f):
             M_dist[fi, fj] = M_dist[fj, fi]
 
+    # Setting diagonal to zero (mandatory, important for the squareform)
+    for fi in range(0, f):
+        M_dist[fi, fi] = 0
+
     # ---------------------------------- Plot distance matrix ----------------------------------#
     plt.figure(figsize=(10, 10))
     plt.imshow(M_dist, origin='lower', cmap=plt.cm.get_cmap('jet'))
@@ -34,13 +38,9 @@ def cluster_HAC(Mat_dist, d_threshold):
     plt.ylabel('Index')
     cbar = plt.colorbar()
     cbar.set_label('Distance')  # , rotation=270)
-    # plt.clim(0,1)
+    plt.clim(0,ceil(np.max(M_dist)*10)/10)
     plt.show()
 
-
-    # Setting diagonal to one (mandatory, important for the squareform)
-    for fi in range(0, f):
-        M_dist[fi, fi] = 0
     M_dist_ss = squareform(M_dist)  # the HAC algorithm need the squareform as an input
 
     d_result = []

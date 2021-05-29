@@ -83,7 +83,7 @@ Calculating distances:
 def dist_pairwise(seq_list1, seq_list2=None, distance=Normalized_Hamming_dist) -> np.array:
     """
     Calculate pairwise distance within a sequence list.
-    If two strings are of different length, d=1.5
+    If two strings are of different length, d=1; Set the diagonal to one.
     :param seq_list1:
     :param distance: distance metric
     :param seq_list2:
@@ -283,6 +283,22 @@ def negation_based_cutoff(d_to_nearest_cp, tolerance):
     return np.quantile(d_to_nearest_cp, tolerance)
 
 
+"Baseline method: clustering according to CDR3 sequences"
+
+
+def groupby_seq(seqs):
+    """
+    Only the same sequence can be clustered together
+    :param seqs:
+    :return: clustering result
+    """
+    groups = np.unique(seqs)
+    clusters = []
+    for seq in seqs:
+        clusters.append(np.where(groups==seq)[0][0])
+    return clusters
+
+
 "Compare the clustering result"
 
 
@@ -303,7 +319,7 @@ def rand_index(clusters1, clusters2):
     d = 0  # occurrence of i!=j & m==k
     for p in range(len(clusters1)):
         for q in range(len(clusters1)):
-            if q != p:
+            if q < p:
                 i = clusters1[p]
                 j = clusters1[q]
                 m = clusters2[p]
@@ -316,6 +332,7 @@ def rand_index(clusters1, clusters2):
                     c += 1
                 elif i != j and m == k:
                     d += 1
+    print("a: %f,b: %f, c: %f, d: %f"%(a,b,c,d))
     return (a + b) / (a + b + c + d)
 
 
@@ -346,6 +363,8 @@ if __name__ == "__main__":
     # print("tf_idf_seq:", tf_idf_seq)
     # dis = dist_pairwise(tf_idf_seq, distance=Cosine_dist)
     # print("dis:", dis)
-    clusters1 = [1, 2, 2, 4]
-    clusters2 = [2, 3, 3, 4]
-    print(rand_index(clusters1, clusters2))
+    # clusters1 = [1, 2, 2, 4]
+    # clusters2 = [2, 3, 3, 4]
+    # print(rand_index(clusters1, clusters2))
+    seqs = ["ab","ac","ab","ad"]
+    print(groupby_seq(seqs))
