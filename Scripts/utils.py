@@ -177,6 +177,10 @@ def bag_of_words(sequence: str, K: list):
 def count_words_in_collection(bag_list: list) -> dict:
     counter = Counter()
     for bag in bag_list:
+        # update the calculation of idf!
+        for k in bag.keys():
+            if bag[k] != 0:
+                bag[k] = 1
         counter.update(bag)
     return dict(counter), len(bag_list)
 
@@ -184,8 +188,8 @@ def count_words_in_collection(bag_list: list) -> dict:
 def idf(counter: dict, n_seq: int) -> dict:
     idf_k = {}
     for kmer in counter.keys():
-        if counter[kmer] != 0:
-            idf_k[kmer] = np.log(n_seq / counter[kmer])
+        # update the calculation of idf s.t. robust to zero-counter[kmer]
+        idf_k[kmer] = 1 + np.log(n_seq / (1+counter[kmer]))
     return idf_k
 
 
@@ -230,7 +234,7 @@ Detect the threshold:
 """
 
 
-def outlier_based_cutoff(d_to_nearest_all):
+def outlier_based_cutoff(d_to_nearest_all,figname=None):
     bins = 30
     cov = 1.5
     fig, ax = plt.subplots(1, 2, figsize=(16, 6))
@@ -240,7 +244,7 @@ def outlier_based_cutoff(d_to_nearest_all):
     ax[0].hist(d_to_nearest_all, bins=bins, label="frequency")
     ax[0].set_yscale('log')
 
-    ax[0].set_xlabel("Normalized Hamming distance")
+    ax[0].set_xlabel("Normalized Hamming distance to nearest neighbor")
     ax[0].set_ylabel("Frequency")
 
     # the smoothed curve
@@ -260,14 +264,17 @@ def outlier_based_cutoff(d_to_nearest_all):
     loc_min = freq[1][min_ind]
     ax[1].plot(freq[1][:-1], np.exp(smoothed_freq0), label='smoothed', c='orange')
     ax[1].set_yscale('log')
-    ax[1].set_xlabel("Normalized Hamming distance to nearest")
+    ax[1].set_xlabel("Normalized Hamming distance to nearest neighbor")
     ax[1].set_ylabel("Frequency")
     ax[1].set_ylim(ax[0].get_ylim())
     plt.axvline(loc_min, ymin=-0.002, linestyle='--', c='grey')
     plt.text(loc_min - 0.05, 1, "%1f" % loc_min[0], color='red')
     plt.grid()
     ax[1].legend()
-    plt.show()
+    if figname is not None:
+        plt.savefig(figname)
+    else:
+        plt.show()
 
     return loc_min
 
@@ -337,7 +344,7 @@ def rand_index(clusters1, clusters2):
 
 
 if __name__ == "__main__":
-    # K = k_mer_set(k=2)
+    K = k_mer_set(k=2)
     # print("K:", K)
     # s1 = "aAaa"
     # s2 = "tttt"
@@ -366,5 +373,17 @@ if __name__ == "__main__":
     # clusters1 = [1, 2, 2, 4]
     # clusters2 = [2, 3, 3, 4]
     # print(rand_index(clusters1, clusters2))
-    seqs = ["ab","ac","ab","ad"]
-    print(groupby_seq(seqs))
+    # seqs = ["ab","ac","ab","ad"]
+    # print(groupby_seq(seqs))
+
+    ###################
+    # test the calculation of tf-idf
+
+    # k=3
+    # path_data = "/Users/lou/Thesis/BCR_Clone_Identification/Data/"
+    # outfile = path_data + "sample90_Nt_info.csv"
+    # df = pd.read_csv(outfile, sep='\t')
+    # df_unique = df.drop_duplicates(subset="JUNCTION", ignore_index=True)
+    # print("Unique CDR3 sequence:", df_unique.shape)
+    # df_test = df_unique.iloc[:, :]
+    # seqs_tf_idf_test = cal_tf_idf(df_test.loc[:, "V-D-J-REGION"].values, k=k, atoms=["a", "t", "c", "g"])

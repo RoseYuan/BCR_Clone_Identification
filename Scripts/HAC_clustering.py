@@ -13,7 +13,7 @@ def main():
     cluster_HAC(M_dist, d_threshold)
 
 
-def cluster_HAC(Mat_dist, d_threshold):
+def cluster_HAC(Mat_dist, d_threshold,fig1=None,fig2=None,fig3=None):
     # tuto = https://joernhees.de/blog/2015/08/26/scipy-hierarchical-clustering-and-dendrogram-tutorial/
 
     """MI is a distance matrix n*n between each element
@@ -36,10 +36,15 @@ def cluster_HAC(Mat_dist, d_threshold):
     plt.imshow(M_dist, origin='lower', cmap=plt.cm.get_cmap('jet'))
     plt.xlabel('Index')
     plt.ylabel('Index')
+    plt.title('Distance matrix')
     cbar = plt.colorbar()
     cbar.set_label('Distance')  # , rotation=270)
     plt.clim(0,ceil(np.max(M_dist)*10)/10)
-    plt.show()
+
+    if fig1 is not None:
+        plt.savefig(fig1)
+    else:
+        plt.show()
 
     M_dist_ss = squareform(M_dist)  # the HAC algorithm need the squareform as an input
 
@@ -59,9 +64,12 @@ def cluster_HAC(Mat_dist, d_threshold):
 
     colors = colorcet.glasbey_light
     set_link_color_palette(colors)
-    plt.figure(figsize=(15, 5))
+    plt.figure(figsize=(16, 4))
     fancy_dendrogram(Z, p=840, truncate_mode='lastp', annotate_above=20, no_labels=True, max_d=d_threshold)
-    plt.show()
+    if fig2 is not None:
+        plt.savefig(fig2)
+    else:
+        plt.show()
 
     # Visualizing clusters
     if n_clust <= len(colors):
@@ -70,8 +78,8 @@ def cluster_HAC(Mat_dist, d_threshold):
             for fj in range(0, f):
                 if clusters[fi] == clusters[fj]:
                     cMI[fi, fj] = clusters[fi]
-
-        plt.rcParams["figure.figsize"] = [8, 8]
+        plt.figure(figsize=(10, 10))
+        # plt.rcParams["figure.figsize"] = [10, 10]
         ncol = 0
         for n in range(0, n_clust):
             xs, ys = np.where(cMI == n + 1)
@@ -83,34 +91,39 @@ def cluster_HAC(Mat_dist, d_threshold):
         plt.xlim(0, f)
         plt.ylim(0, f)
         plt.ylabel('Index')
-        plt.show()
+        plt.title("Clusters")
+        if fig3 is not None:
+            plt.savefig(fig3)
+        else:
+            plt.show()
 
     return clusters
 
 
 def fancy_dendrogram(*args, **kwargs):
     # a build in fucntion to plot better dendrogram
-    max_d = kwargs.pop('max_d', None)
-    if max_d and 'color_threshold' not in kwargs:
-        kwargs['color_threshold'] = max_d
-    annotate_above = kwargs.pop('annotate_above', 0)
+    with plt.rc_context({'lines.linewidth': 0.5}):
+        max_d = kwargs.pop('max_d', None)
+        if max_d and 'color_threshold' not in kwargs:
+            kwargs['color_threshold'] = max_d
+        annotate_above = kwargs.pop('annotate_above', 0)
 
-    ddata = dendrogram(*args, **kwargs)
+        ddata = dendrogram(*args, **kwargs)
 
-    if not kwargs.get('no_plot', False):
-        plt.title('Hierarchical Clustering Dendrogram')
-        # plt.xlabel('sample index or (cluster size)')
-        plt.ylabel('distance')
-        for i, d, c in zip(ddata['icoord'], ddata['dcoord'], ddata['color_list']):
-            x = 0.5 * sum(i[1:3])
-            y = d[1]
-            if y > annotate_above:
-                plt.plot(x, y, 'o', c=c)
-                plt.annotate("%.3g" % y, (x, y), xytext=(0, -5),
-                             textcoords='offset points',
-                             va='top', ha='center')
-        if max_d:
-            plt.axhline(y=max_d, c='k')
+        if not kwargs.get('no_plot', False):
+            plt.title('Hierarchical Clustering Dendrogram')
+            # plt.xlabel('sample index or (cluster size)')
+            plt.ylabel('distance')
+            for i, d, c in zip(ddata['icoord'], ddata['dcoord'], ddata['color_list']):
+                x = 0.5 * sum(i[1:3])
+                y = d[1]
+                if y > annotate_above:
+                    plt.plot(x, y, 'o', c=c)
+                    plt.annotate("%.3g" % y, (x, y), xytext=(0, -5),
+                                 textcoords='offset points',
+                                 va='top', ha='center')
+            if max_d:
+                plt.axhline(y=max_d, c='k')
     return ddata
 
 
