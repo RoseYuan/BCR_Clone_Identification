@@ -8,10 +8,8 @@ from Clonotyping import *
 # compare clone identification results (heatmap)
 # distance to nearest neighbor distribution
 
-def compare_clustering_real():
-    path_data = '/home/siyuan/thesis/Data/new_data/rerun/'
-    samples = ["sample%s"%n for n in
-               [76, 77, 78, 79, 82, 83, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]]
+def compare_clustering_real(path_data,samples):
+
     df_ari = pd.DataFrame(columns=['rand index_0_1', 'rand index_0_2', 'rand index_1_2'])
     for sample in samples:
         clusters0 = np.load(path_data + "clustering/clusters_%s_junction.npy"%sample)
@@ -56,9 +54,7 @@ def compare_clustering_real():
     cbar.ax.tick_params(labelsize=16)
     fig.savefig(path_data + "fig/cluster_similarity_real.png")
 
-def singleton_distribution_real():
-    path_data = '/home/siyuan/thesis/Data/new_data/rerun/'
-
+def singleton_distribution_real(path_data):
     print("Plot the distance to nearest neighbor distribution with Levenshtein distance.")
     dis_neg = np.load(path_data + 'distance/dis_negation_v-j-junction.npy')
     d_to_nearest_all_neg = dist_to_nearest(dis_neg)
@@ -354,8 +350,12 @@ def singleton_distribution_sim(path_data, sample,metric,style):
                                 smoothed_curve=smoothed_curve)
 
 if __name__ == '__main__':
-    compare_clustering_real()
-    singleton_distribution_real()
+    path_data = '/home/siyuan/thesis/Data/new_data/rerun/'
+    samples = ["sample%s"%n for n in
+               [76, 77, 78, 79, 82, 83, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]]
+
+    compare_clustering_real(path_data, samples)
+    singleton_distribution_real(path_data)
 
     path_data = '/home/siyuan/thesis/Data/Afree_paper_data/simulated/rerun/'
     compare_clustering_simulated(path_data)

@@ -3,15 +3,12 @@ from SeqRepresent import *
 from ReadIgBlast import *
 from DetectThreshold import *
 
-def cat_sequence_real():
+def cat_sequence_real(path_data,samples):
     # save sequences to fasta files, and run igblastn
-    path_data = '/home/siyuan/thesis/Data/new_data/rerun/datasets/'
-    real_samples = ["sample%s" % n for n in
-                    [76, 77, 78, 79, 82, 83, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]]
-    for sample in real_samples:
+    for sample in samples:
         print(sample)
-        summary_file = path_data + sample + '/1_Summary.txt'
-        seqfile = path_data + sample + '.fasta'
+        summary_file = path_data + 'datasets/' + sample + '/1_Summary.txt'
+        seqfile = path_data + 'datasets/' + sample + '.fasta'
 
         df = pd.read_csv(summary_file,sep='\t')
         l,_ = df.shape
@@ -25,25 +22,19 @@ def cat_sequence_real():
             ofile.write(">%s"%i + "\n" + sequences[i] + "\n")
         ofile.close()
 
-def clean_real():
+def clean_real(path_data,samples):
     # clean the data
-    path_data = '/home/siyuan/thesis/Data/new_data/rerun/datasets/'
-    real_samples = ["sample%s" % n for n in
-                    [76, 77, 78, 79, 82, 83, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]]
-    for sample in real_samples:
-        infile = path_data + sample + '_IgBlast.txt'
-        outfile = path_data + sample +"_Nt_info.csv"
+    for sample in samples:
+        infile = path_data + 'datasets/' + sample + '_IgBlast.txt'
+        outfile = path_data + 'datasets/' + sample +"_Nt_info.csv"
         print("========== %s ==========="%sample)
         df_n = pd.read_csv(infile, sep='\t')
         df_nes = read_data(df_n)
         df_nes.to_csv(outfile, sep='\t', index=False)
 
 
-def combine_all():
-    path_data = '/home/siyuan/thesis/Data/new_data/rerun/'
+def combine_all(path_data,samples):
     outfile = path_data + 'datasets/' + "sample76-99_Nt_info.csv"
-    samples = ["sample%s" % n for n in
-                    [76, 77, 78, 79, 82, 83, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]]
     df_all = pd.DataFrame()
     for sample in samples:
         df = pd.read_csv(path_data + 'datasets/' + sample + "_Nt_info.csv", sep='\t')
@@ -51,9 +42,7 @@ def combine_all():
         df_all = pd.concat((df_all, df))
     df_all.to_csv(outfile, sep='\t', index=False)
 
-def detect_threshold_real(tolerance):
-    path_data = '/home/siyuan/thesis/Data/new_data/rerun/'
-    outfile = path_data + 'datasets/' + "sample76-99_Nt_info.csv"
+def detect_threshold_real(path_data,outfile,tolerance):
     df_all = pd.read_csv(outfile, sep='\t')
     df_all_unique = df_all.drop_duplicates(subset=['JUNCTION','sample'], ignore_index=True)
 
@@ -103,16 +92,12 @@ def detect_threshold_real(tolerance):
     return d_threshold1, d_threshold2
 
 
-def clustering_real(d_threshold1, d_threshold2):
-    path_data = '/home/siyuan/thesis/Data/new_data/rerun/'
-    real_samples = ["sample%s" % n for n in
-                    [76, 77, 78, 79, 82, 83, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]]
-    outfile = path_data + 'datasets/' + "sample76-99_Nt_info.csv"
+def clustering_real(path_data, samples, outfile, represent_file, d_threshold1, d_threshold2):
     df_all = pd.read_csv(outfile, sep='\t')
     df_all_unique = df_all.drop_duplicates(subset=['JUNCTION','sample'], ignore_index=True)
-    df_rep_all = pd.read_csv(path_data + 'distance/tf-idf_sample76-99_unique.csv', sep='\t')
+    df_rep_all = pd.read_csv(represent_file, sep='\t')
 
-    for sample in real_samples:
+    for sample in samples:
         infile = path_data+'datasets/'+sample+'_Nt_info.csv'
         df = pd.read_csv(infile, sep='\t')
         print("=======%s======="%sample)
@@ -148,19 +133,14 @@ def clustering_real(d_threshold1, d_threshold2):
         del dis, representor, clusters, df
     return
 
-def cat_sequence_simulated():
-    samples_2 = ["sampleMS2_%s_db-pass.tab" % (m + 1) for m in range(20)]
-    samples_3 = ["sampleMS3_o%s_germ-pass.tab" % (m + 1) for m in range(26)]
-    samples_4 = ["sampleMS4_o%s_germ-pass.tab" % (m + 1) for m in range(29)]
-    path_data = '/home/siyuan/thesis/Data/Afree_paper_data/simulated/rerun/datasets/'
-
-    for sample in samples_2 + samples_3 + samples_4:
+def cat_sequence_simulated(path_data,samples):
+    for sample in samples:
         print(sample)
-        summary_file = path_data + sample
+        summary_file = path_data + 'datasets/'+ sample
         split = re.split(r'(\d+)', sample)
         subject_id = split[1]
         sample_id = split[3]
-        seqfile = path_data + subject_id + '_' + sample_id + '.fasta'
+        seqfile = path_data + 'datasets/'+ subject_id + '_' + sample_id + '.fasta'
 
         df = pd.read_csv(summary_file, sep='\t')
         l, _ = df.shape
@@ -174,34 +154,28 @@ def cat_sequence_simulated():
             ofile.write(">%s" % (i+1) + "\n" + sequences[i] + "\n")
         ofile.close()
 
-def clean_simulated():
-    samples_2 = ["sampleMS2_%s_db-pass.tab" % (m + 1) for m in range(20)]
-    samples_3 = ["sampleMS3_o%s_germ-pass.tab" % (m + 1) for m in range(26)]
-    samples_4 = ["sampleMS4_o%s_germ-pass.tab" % (m + 1) for m in range(29)]
-    path_data = '/home/siyuan/thesis/Data/Afree_paper_data/simulated/rerun/datasets/'
-    for sample in samples_2 + samples_3 + samples_4:
+def clean_simulated(path_data,samples):
+    for sample in samples:
         split = re.split(r'(\d+)', sample)
         subject_id = split[1]
         sample_id = split[3]
-        infile = path_data + subject_id + '_' + sample_id + '_IgBlast.txt'
-        outfile = path_data + "sampleMS%s_%s" % (subject_id, sample_id) + "_Nt_info.csv"
+        infile = path_data + 'datasets/'+ subject_id + '_' + sample_id + '_IgBlast.txt'
+        outfile = path_data + 'datasets/'+ "sampleMS%s_%s" % (subject_id, sample_id) + "_Nt_info.csv"
         print("========== %s ===========" % sample)
         df_n = pd.read_csv(infile, sep='\t')
         df_nes = read_data(df_n)
         df_nes.to_csv(outfile, sep='\t', index=False)
 
-def detect_threshold_simulated(tolerance):
-    path_data = '/home/siyuan/thesis/Data/Afree_paper_data/simulated/rerun/'
-    samples_2 = ["sampleMS2_%s_db-pass.tab" % (m + 1) for m in range(20)]
+def detect_threshold_simulated(path_data, samples, negation_file, tolerance):
 
     # detect the two thresholds for each sample, and take the average
     threshold1_lst = []
     threshold2_lst = []
-    df_neg = pd.read_csv("/home/siyuan/thesis/Data/new_data/rerun/datasets/negative_table_Nt_info.csv",
+    df_neg = pd.read_csv(negation_file,
                          sep='\t').drop_duplicates(
         subset=['JUNCTION'], ignore_index=True)
 
-    for sample in samples_2:
+    for sample in samples:
         print("=============%s=============="%sample)
         split = re.split(r'(\d+)', sample)
         subject_id = split[1]
@@ -235,9 +209,8 @@ def detect_threshold_simulated(tolerance):
     return np.mean(threshold1_lst), np.mean(threshold2_lst)
 
 
-def clustering_simulated(d_threshold1,d_threshold2, samples_2):
-    path_data = '/home/siyuan/thesis/Data/Afree_paper_data/simulated/rerun/'
-    df_neg = pd.read_csv("/home/siyuan/thesis/Data/new_data/rerun/datasets/negative_table_Nt_info.csv",
+def clustering_simulated(path_data, negation_file, d_threshold1,d_threshold2, samples_2):
+    df_neg = pd.read_csv(negation_file,
                          sep='\t').drop_duplicates(subset=['JUNCTION'], ignore_index=True)
 
     for sample in samples_2:
@@ -277,26 +250,41 @@ def clustering_simulated(d_threshold1,d_threshold2, samples_2):
     return
 
 if __name__ == '__main__':
+    path_real_data = '/home/siyuan/thesis/Data/new_data/rerun/'
+    real_samples = ["sample%s" % n for n in
+                    [76, 77, 78, 79, 82, 83, 86, 87, 88, 89, 90, 91, 92, 93, 94, 95, 96, 97, 98, 99]]
+
     print('Do clustering for each sample.')
-    cat_sequence_real()
-    clean_real()
-    combine_all()
-    d_threshold1, d_threshold2 = detect_threshold_real(0.0003)
+    cat_sequence_real(path_real_data,real_samples)
+    clean_real(path_real_data,real_samples)
+    combine_all(path_real_data,real_samples)
+    outfile = path_real_data + 'datasets/' + "sample76-99_Nt_info.csv"
+    d_threshold1, d_threshold2 = detect_threshold_real(path_real_data,outfile,0.0003)
     print(d_threshold1)
     print(d_threshold2)
     # d_threshold1 = 0.1111111
     # d_threshold2 = 0.1508548650741577
-    clustering_real(d_threshold1,d_threshold2)
+    represent_file = path_real_data + 'distance/tf-idf_sample76-99_unique.csv'
+    clustering_real(path_real_data,real_samples,outfile,represent_file,d_threshold1,d_threshold2)
 
-    cat_sequence_simulated()
-    clean_simulated()
-    d_threshold1, d_threshold2 = detect_threshold_simulated(0.0003)
+
+    samples_2 = ["sampleMS2_%s_db-pass.tab" % (m + 1) for m in range(20)]
+    samples_3 = ["sampleMS3_o%s_germ-pass.tab" % (m + 1) for m in range(26)]
+    samples_4 = ["sampleMS4_o%s_germ-pass.tab" % (m + 1) for m in range(29)]
+    path_data = '/home/siyuan/thesis/Data/Afree_paper_data/simulated/rerun/'
+    samples = samples_2+samples_3+samples_4
+
+    cat_sequence_simulated(path_data,samples)
+    clean_simulated(path_data,samples)
+
+    negation_file = "/home/siyuan/thesis/Data/new_data/rerun/datasets/negative_table_Nt_info.csv"
+    d_threshold1, d_threshold2 = detect_threshold_simulated(path_data, samples_2, negation_file, 0.0003)
     print(d_threshold1)
     print(d_threshold2)
     # d_threshold1 = 0.1003991999717159
     # d_threshold2 = 0.1836092398145795
     samples_2 = ["sampleMS2_%s" % (m + 1) for m in range(20)]
-    clustering_simulated(d_threshold1, d_threshold2,samples_2)
+    clustering_simulated(path_data, negation_file, d_threshold1, d_threshold2,samples_2)
 
     # run IgBlast in bash:
     # """
