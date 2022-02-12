@@ -9,11 +9,11 @@ from math import ceil
 
 def main():
     M_dist = 1 - np.load("MI.npy")
-    d_threshold = 0.8
+    d_threshold = 0.15
     cluster_HAC(M_dist, d_threshold)
 
 
-def cluster_HAC(Mat_dist, d_threshold,fig1=None,fig2=None,fig3=None):
+def cluster_HAC(Mat_dist, d_threshold, fig1=None, fig2=None, fig3=None):
     # tuto = https://joernhees.de/blog/2015/08/26/scipy-hierarchical-clustering-and-dendrogram-tutorial/
 
     """MI is a distance matrix n*n between each element
