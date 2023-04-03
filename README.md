@@ -12,3 +12,6 @@ The first line of the `.yml` file sets the new environment's name.
 * In order to be able to replicate the results, please change the directory in all scripts `do_*.py`.
 
 * The simulated datasets are downloaded from https://zenodo.org/record/4009638#.YPHFMegzY2w
+
+# Related publication
+https://www.biorxiv.org/content/10.1101/2022.12.12.520133v2.full
