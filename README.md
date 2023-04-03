@@ -14,4 +14,4 @@ The first line of the `.yml` file sets the new environment's name.
 * The simulated datasets are downloaded from https://zenodo.org/record/4009638#.YPHFMegzY2w
 
 # Related publication
-https://www.biorxiv.org/content/10.1101/2022.12.12.520133v2.full
+[Pelissier, Aurelien, et al. "Quantifying B-cell Clonal Diversity In Repertoire Data." bioRxiv (2022): 2022-12.](https://www.biorxiv.org/content/10.1101/2022.12.12.520133v2.full)
